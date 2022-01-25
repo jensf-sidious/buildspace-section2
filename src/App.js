@@ -7,7 +7,7 @@ export default function App() {
 
   // A state variable to store the users public wallet
   const [currentAccount, setCurrentAccount] = React.useState("");
-  const contractAddress = '0x273Fc4CA9fEE91B87fCecF876B6721944ab7ff9D';
+  const contractAddress = '0x65C42130334C096aC20B5865408f0Bae8AF3568D';
 
   const checkIfWalletIsConnected = async () => {
     // Check if we have access to window.ethereum
