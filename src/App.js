@@ -9,7 +9,7 @@ export default function App() {
   const [currentAccount, setCurrentAccount] = React.useState("");
   // A state variable to store all waves
   const [allWaves, setAllWaves] = React.useState([]);
-  const contractAddress = '0x65C42130334C096aC20B5865408f0Bae8AF3568D';
+  const contractAddress = '0x43380340D6864e108d46dEe46dE0E46063637e98';
 
   const checkIfWalletIsConnected = async () => {
     // Check if we have access to window.ethereum
