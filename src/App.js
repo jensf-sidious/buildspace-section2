@@ -7,10 +7,13 @@ export default function App() {
 
   // A state variable to store the users public wallet
   const [currentAccount, setCurrentAccount] = React.useState("");
+  // A state variable to store all waves
+  const [allWaves, setAllWaves] = React.useState([]);
   const contractAddress = '0x65C42130334C096aC20B5865408f0Bae8AF3568D';
 
   const checkIfWalletIsConnected = async () => {
     // Check if we have access to window.ethereum
+    console.log("[checkIfWalletIsConnected]")
     try {
       const { ethereum } = window;
       if(!ethereum) {
@@ -26,6 +29,7 @@ export default function App() {
         const account = accounts[0];
         console.log("Found an authorized account: ", account);
         setCurrentAccount(account);
+        await getAllWaves();
       } else {
         console.log("No authorized account found");
       }
@@ -52,9 +56,36 @@ export default function App() {
     }
   }
 
-  React.useEffect(() => { checkIfWalletIsConnected() }, []);
+  const getAllWaves = async () => {
+    try {
+      const { ethereum } = window;
+      if(ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const wavePortalContract = new ethers.Contract(contractAddress, waveportal.abi, signer);
 
-  const wave = async () => {
+        const waves = await wavePortalContract.getAllWaves();
+
+        /* Kind of a mapper here */
+        let wavesCleaned = [];
+        waves.forEach(wave => {
+          wavesCleaned.push({
+            address: wave.waver,
+            timestamp: new Date(wave.timestamp * 1000),
+            message: wave.message
+          });
+        });
+        setAllWaves(wavesCleaned);
+        console.log("[getAllWaves]: ", wavesCleaned);
+      } else {
+        console.log("Ethereum object does not exist!");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const wave = async (message) => {
       try {
         const { ethereum } = window;
 
@@ -73,7 +104,7 @@ export default function App() {
           /*
           * Execute the actual wave from your smart contract
           */
-          const waveTxn = await wavePortalContract.wave();
+          const waveTxn = await wavePortalContract.wave(message);
           console.log("Mining...", waveTxn.hash);
 
           await waveTxn.wait();
@@ -89,7 +120,16 @@ export default function App() {
         console.log(error)
       }
   }
-  
+
+  React.useEffect(() => { checkIfWalletIsConnected() }, []);
+
+  let inputRef = React.createRef();
+  let waveInputHandler = async (e) => {
+    if(inputRef.current.value.length > 0) {
+      await wave(inputRef.current.value);
+    }
+  }
+
   return (
     <div className="mainContainer">
 
@@ -104,7 +144,9 @@ export default function App() {
         Hey I am Don Teddy 🐈.
         </div>
 
-        <button className="waveButton" onClick={wave}>
+        <input ref={inputRef} type="text"></input>
+
+        <button className="waveButton" onClick={waveInputHandler}>
           Wave at Me
         </button>
         {/*
@@ -115,6 +157,16 @@ export default function App() {
             Connect Wallet
           </button>
         )}
+
+        {allWaves.map((wave, index) => {
+          return (
+            <div key={index} style={{ backgroundColor: "oldlace", marginTop: "16px", padding: "8px" }}>
+              <div>Address: {wave.address}</div>
+              <div>Time: {wave.timestamp.toString()}</div>
+              <div>Message: {wave.message}</div>
+            </div>
+          )
+        })}
       </div>
     </div>
   );
