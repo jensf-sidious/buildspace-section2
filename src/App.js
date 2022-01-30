@@ -9,7 +9,7 @@ export default function App() {
   const [currentAccount, setCurrentAccount] = React.useState("");
   // A state variable to store all waves
   const [allWaves, setAllWaves] = React.useState([]);
-  const contractAddress = '0x43380340D6864e108d46dEe46dE0E46063637e98';
+  const contractAddress = '0xD8B3D8133AA376bBaF36938cd276092D3EABdb37';
 
   const checkIfWalletIsConnected = async () => {
     // Check if we have access to window.ethereum
@@ -85,6 +85,34 @@ export default function App() {
     }
   }
 
+  React.useEffect(() => {
+    let wavePortalContract;
+
+    const onnewWave = (from, timestamp, message) => {
+      console.log("newWave, ", from, timestamp, message);
+      setAllWaves(prevState => [...prevState, {
+        address: from,
+        timestamp: new Date(timestamp * 1000),
+        message: message,
+        }
+      ]);
+    };
+
+    if(window.ethereum) {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      wavePortalContract = new ethers.Contract(contractAddress, waveportal.abi, signer);
+      wavePortalContract.on("newWave", onnewWave);
+    }
+
+    return () => {
+      if(wavePortalContract) {
+        wavePortalContract.on("newWave", onnewWave);
+      }
+    }
+  }, []);
+
   const wave = async (message) => {
       try {
         const { ethereum } = window;
@@ -103,8 +131,10 @@ export default function App() {
 
           /*
           * Execute the actual wave from your smart contract
+          *
+          * What this does is make the user pay a set amount of gas of 300,000. And, if they don't use all of it in the transaction they'll automatically be refunded.
           */
-          const waveTxn = await wavePortalContract.wave(message);
+          const waveTxn = await wavePortalContract.wave(message, { gasLimit: 300000 });
           console.log("Mining...", waveTxn.hash);
 
           await waveTxn.wait();
